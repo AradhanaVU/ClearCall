@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { GeminiAnalysis, ConversationSummary, geminiService } from '../services/geminiService';
 import { Theme } from '../types';
 import './GeminiInsights.css';
@@ -9,7 +9,11 @@ interface GeminiInsightsProps {
   onToggle: () => void;
 }
 
-const GeminiInsights: React.FC<GeminiInsightsProps> = ({ theme, isVisible, onToggle }) => {
+export interface GeminiInsightsRef {
+  analyzeText: (text: string) => Promise<void>;
+}
+
+const GeminiInsights = forwardRef<GeminiInsightsRef, GeminiInsightsProps>(({ theme, isVisible, onToggle }, ref) => {
   const [isConnected, setIsConnected] = useState(false);
   const [currentAnalysis, setCurrentAnalysis] = useState<GeminiAnalysis | null>(null);
   const [conversationSummary, setConversationSummary] = useState<ConversationSummary | null>(null);
@@ -60,6 +64,11 @@ const GeminiInsights: React.FC<GeminiInsightsProps> = ({ theme, isVisible, onTog
       setIsLoading(false);
     }
   };
+
+  // Expose analyzeText method to parent component
+  useImperativeHandle(ref, () => ({
+    analyzeText
+  }));
 
   const generateSummary = async () => {
     if (!isConnected) {
@@ -273,6 +282,6 @@ const GeminiInsights: React.FC<GeminiInsightsProps> = ({ theme, isVisible, onTog
       </div>
     </div>
   );
-};
+});
 
 export default GeminiInsights;

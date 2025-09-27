@@ -38,6 +38,10 @@ const SpeechRecognition: React.FC<SpeechRecognitionProps> = ({
   const [isSupported, setIsSupported] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
+  const isStartingRef = useRef(false);
+  const isStoppingRef = useRef(false);
+  const isRunningRef = useRef(false);
+  const restartTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     // Check for browser support
@@ -58,6 +62,11 @@ const SpeechRecognition: React.FC<SpeechRecognitionProps> = ({
     recognitionRef.current.maxAlternatives = 1;
 
     // Handle successful recognition
+    recognitionRef.current.onstart = () => {
+      console.log('Speech recognition started');
+      isRunningRef.current = true;
+    };
+
     recognitionRef.current.onresult = (event: SpeechRecognitionEvent) => {
       let finalTranscript = '';
       let interimTranscript = '';
@@ -82,10 +91,13 @@ const SpeechRecognition: React.FC<SpeechRecognitionProps> = ({
     recognitionRef.current.onerror = (event: SpeechRecognitionErrorEvent) => {
       console.error('Speech recognition error:', event.error);
       
+      // Don't stop for non-critical errors
+      if (event.error === 'aborted' || event.error === 'no-speech') {
+        console.log('Non-critical error, continuing recognition:', event.error);
+        return;
+      }
+      
       switch (event.error) {
-        case 'no-speech':
-          setError('No speech detected. Please try again.');
-          break;
         case 'audio-capture':
           setError('Microphone not accessible. Please check your permissions.');
           break;
@@ -104,18 +116,12 @@ const SpeechRecognition: React.FC<SpeechRecognitionProps> = ({
 
     // Handle end of recognition
     recognitionRef.current.onend = () => {
-      if (isListening) {
-        // Restart recognition if it was supposed to be listening
-        setTimeout(() => {
-          if (isListening && recognitionRef.current) {
-            try {
-              recognitionRef.current.start();
-            } catch (err) {
-              console.error('Error restarting recognition:', err);
-            }
-          }
-        }, 100);
-      }
+      console.log('Speech recognition ended, isListening:', isListening);
+      isRunningRef.current = false;
+      
+      // Disable automatic restart to prevent loops
+      // User can manually restart by clicking the start button
+      console.log('Speech recognition ended. Click Start to resume listening.');
     };
 
     setIsInitialized(true);
@@ -125,19 +131,37 @@ const SpeechRecognition: React.FC<SpeechRecognitionProps> = ({
     if (!isInitialized || !recognitionRef.current) return;
 
     if (isListening) {
-      try {
-        setError(null);
-        recognitionRef.current.start();
-      } catch (err) {
-        console.error('Error starting recognition:', err);
-        setError('Failed to start speech recognition. Please try again.');
-        onStop();
+      if (!isStartingRef.current && !isRunningRef.current) {
+        try {
+          isStartingRef.current = true;
+          setError(null);
+          console.log('Starting speech recognition...');
+          recognitionRef.current.start();
+        } catch (err) {
+          console.error('Error starting recognition:', err);
+          if (err.name === 'InvalidStateError') {
+            console.log('InvalidStateError on start, recognition may already be running');
+            isRunningRef.current = true; // Assume it's running
+          } else {
+            setError('Failed to start speech recognition. Please try again.');
+            onStop();
+          }
+        } finally {
+          isStartingRef.current = false;
+        }
       }
     } else {
-      try {
-        recognitionRef.current.stop();
-      } catch (err) {
-        console.error('Error stopping recognition:', err);
+      if (!isStoppingRef.current) {
+        try {
+          isStoppingRef.current = true;
+          console.log('Stopping speech recognition...');
+          recognitionRef.current.stop();
+          isRunningRef.current = false;
+        } catch (err) {
+          console.error('Error stopping recognition:', err);
+        } finally {
+          isStoppingRef.current = false;
+        }
       }
     }
   }, [isListening, isInitialized, onStop]);

@@ -1,4 +1,4 @@
-import { io, Socket } from 'socket.io-client';
+// Removed socket.io import - using HTTP requests instead
 
 export interface GeminiAnalysis {
   riskLevel: 'low' | 'medium' | 'high';
@@ -28,7 +28,6 @@ export interface GeminiResponse {
 }
 
 class GeminiService {
-  private socket: Socket | null = null;
   private conversationId: string | null = null;
   private isConnected: boolean = false;
 
@@ -40,38 +39,24 @@ class GeminiService {
     return `conv_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   }
 
-  // Connect to backend WebSocket
+  // Connect to backend (HTTP-based)
   connect(): Promise<void> {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
       try {
-        this.socket = io('http://localhost:5000', {
-          transports: ['websocket', 'polling']
-        });
-
-        this.socket.on('connect', () => {
+        console.log('🔍 Checking backend health...');
+        const response = await fetch('http://localhost:5000/api/health');
+        const data = await response.json();
+        
+        if (data.status === 'OK') {
           console.log('🔌 Connected to Gemini backend');
           this.isConnected = true;
-          
-          // Join conversation room
-          if (this.conversationId) {
-            this.socket?.emit('join-conversation', this.conversationId);
-          }
-          
           resolve();
-        });
-
-        this.socket.on('disconnect', () => {
-          console.log('🔌 Disconnected from Gemini backend');
-          this.isConnected = false;
-        });
-
-        this.socket.on('connect_error', (error) => {
-          console.error('❌ Connection error:', error);
-          this.isConnected = false;
-          reject(error);
-        });
-
+        } else {
+          throw new Error('Backend not responding correctly');
+        }
       } catch (error) {
+        console.error('❌ Connection error:', error);
+        this.isConnected = false;
         reject(error);
       }
     });
@@ -79,11 +64,7 @@ class GeminiService {
 
   // Disconnect from backend
   disconnect(): void {
-    if (this.socket) {
-      this.socket.disconnect();
-      this.socket = null;
-      this.isConnected = false;
-    }
+    this.isConnected = false;
   }
 
   // Analyze text with Gemini AI
@@ -191,9 +172,6 @@ class GeminiService {
   // Start new conversation
   startNewConversation(): void {
     this.conversationId = this.generateConversationId();
-    if (this.socket && this.isConnected) {
-      this.socket.emit('join-conversation', this.conversationId);
-    }
   }
 }
 
