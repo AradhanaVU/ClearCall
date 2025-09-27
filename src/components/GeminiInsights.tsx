@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useImperativeHandle, forwardRef } from 'react';
 import { GeminiAnalysis, ConversationSummary, geminiService } from '../services/geminiService';
 import { Theme } from '../types';
 import './GeminiInsights.css';
@@ -9,7 +9,11 @@ interface GeminiInsightsProps {
   onToggle: () => void;
 }
 
-const GeminiInsights: React.FC<GeminiInsightsProps> = ({ theme, isVisible, onToggle }) => {
+export interface GeminiInsightsRef {
+  analyzeText: (text: string) => Promise<void>;
+}
+
+const GeminiInsights = forwardRef<GeminiInsightsRef, GeminiInsightsProps>(({ theme, isVisible, onToggle }, ref) => {
   const [isConnected, setIsConnected] = useState(false);
   const [currentAnalysis, setCurrentAnalysis] = useState<GeminiAnalysis | null>(null);
   const [conversationSummary, setConversationSummary] = useState<ConversationSummary | null>(null);
@@ -38,28 +42,31 @@ const GeminiInsights: React.FC<GeminiInsightsProps> = ({ theme, isVisible, onTog
     };
   }, []);
 
-  const analyzeText = async (text: string) => {
-    if (!isConnected) {
-      setError('Not connected to AI service');
-      return;
-    }
-
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const analysis = await geminiService.analyzeText(text);
-      if (analysis) {
-        setCurrentAnalysis(analysis);
-      } else {
-        setError('Analysis failed');
+  // Expose methods to parent component
+  useImperativeHandle(ref, () => ({
+    analyzeText: async (text: string) => {
+      if (!isConnected) {
+        setError('Not connected to AI service');
+        return;
       }
-    } catch (err) {
-      setError('Error analyzing text');
-    } finally {
-      setIsLoading(false);
+
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        const analysis = await geminiService.analyzeText(text);
+        if (analysis) {
+          setCurrentAnalysis(analysis);
+        } else {
+          setError('Analysis failed');
+        }
+      } catch (err) {
+        setError('Error analyzing text');
+      } finally {
+        setIsLoading(false);
+      }
     }
-  };
+  }));
 
   const generateSummary = async () => {
     if (!isConnected) {
@@ -273,6 +280,6 @@ const GeminiInsights: React.FC<GeminiInsightsProps> = ({ theme, isVisible, onTog
       </div>
     </div>
   );
-};
+});
 
 export default GeminiInsights;

@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { TranscriptEntry, ScamKeyword, Theme, CallLogEntry } from './types';
 import SpeechRecognition from './components/SpeechRecognition';
 import CaptionDisplay from './components/CaptionDisplay';
-import GeminiInsights from './components/GeminiInsights';
+import GeminiInsights, { GeminiInsightsRef } from './components/GeminiInsights';
 import { ScamDetector } from './utils/ScamDetector';
 import ThemeToggle from './components/ThemeToggle';
 import CallLog from './components/CallLog';
@@ -20,6 +20,7 @@ const App: React.FC = () => {
   const [showCallLog, setShowCallLog] = useState(false);
   const [showGeminiInsights, setShowGeminiInsights] = useState(false);
   const [geminiConnected, setGeminiConnected] = useState(false);
+  const geminiInsightsRef = useRef<GeminiInsightsRef>(null);
 
   // Initialize call log from localStorage
   useEffect(() => {
@@ -47,7 +48,34 @@ const App: React.FC = () => {
     localStorage.setItem('clearcall-logs', JSON.stringify(callLogs));
   }, [callLogs]);
 
+  // Check Gemini connection status
+  useEffect(() => {
+    const checkConnection = async () => {
+      try {
+        console.log('🔍 Checking Gemini connection...');
+        const isConnected = await geminiService.healthCheck();
+        console.log('📊 Connection result:', isConnected);
+        setGeminiConnected(isConnected);
+      } catch (error) {
+        console.error('Failed to check Gemini connection:', error);
+        setGeminiConnected(false);
+      }
+    };
+
+    checkConnection();
+    
+    // Check connection periodically
+    const interval = setInterval(checkConnection, 5000);
+    
+    return () => clearInterval(interval);
+  }, []);
+
   const handleTranscriptUpdate = useCallback(async (newText: string) => {
+    console.log('🎤 New transcript received:', newText);
+    console.log('🔌 Gemini connected:', geminiConnected);
+    console.log('👁️ Insights visible:', showGeminiInsights);
+    console.log('🔗 Ref available:', !!geminiInsightsRef.current);
+    
     const scamDetection = ScamDetector.detectScamKeywords(newText, scamKeywords);
     
     const newEntry: TranscriptEntry = {
@@ -60,13 +88,20 @@ const App: React.FC = () => {
 
     setTranscript(prev => [...prev, newEntry]);
 
-    // Send to Gemini for enhanced analysis if connected
-    if (geminiConnected && showGeminiInsights) {
+    // Send to Gemini for enhanced analysis if connected and insights are visible
+    if (geminiConnected && showGeminiInsights && geminiInsightsRef.current) {
+      console.log('🚀 Triggering AI analysis...');
       try {
-        await geminiService.analyzeText(newText);
+        await geminiInsightsRef.current.analyzeText(newText);
+        console.log('✅ AI analysis triggered successfully');
       } catch (error) {
-        console.error('Gemini analysis error:', error);
+        console.error('❌ Gemini analysis error:', error);
       }
+    } else {
+      console.log('⚠️ AI analysis not triggered - conditions not met');
+      console.log('- Gemini connected:', geminiConnected);
+      console.log('- Insights visible:', showGeminiInsights);
+      console.log('- Ref available:', !!geminiInsightsRef.current);
     }
   }, [geminiConnected, showGeminiInsights]);
 
@@ -183,6 +218,7 @@ const App: React.FC = () => {
             />
 
             <GeminiInsights
+              ref={geminiInsightsRef}
               theme={currentTheme}
               isVisible={showGeminiInsights}
               onToggle={() => setShowGeminiInsights(!showGeminiInsights)}

@@ -38,6 +38,8 @@ const SpeechRecognition: React.FC<SpeechRecognitionProps> = ({
   const [isSupported, setIsSupported] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
+  const isStartingRef = useRef(false);
+  const isStoppingRef = useRef(false);
 
   useEffect(() => {
     // Check for browser support
@@ -84,8 +86,9 @@ const SpeechRecognition: React.FC<SpeechRecognitionProps> = ({
       
       switch (event.error) {
         case 'no-speech':
-          setError('No speech detected. Please try again.');
-          break;
+          console.log('⚠️ No speech detected, continuing...');
+          // Don't stop for no-speech, just continue
+          return;
         case 'audio-capture':
           setError('Microphone not accessible. Please check your permissions.');
           break;
@@ -95,8 +98,14 @@ const SpeechRecognition: React.FC<SpeechRecognitionProps> = ({
         case 'network':
           setError('Network error. Please check your internet connection.');
           break;
+        case 'aborted':
+          console.log('⚠️ Speech recognition aborted, continuing...');
+          // Don't stop for aborted, just continue
+          return;
         default:
-          setError(`Speech recognition error: ${event.error}`);
+          console.log(`⚠️ Speech recognition error: ${event.error}, continuing...`);
+          // Don't stop for other errors, just log and continue
+          return;
       }
       
       onStop();
@@ -104,14 +113,23 @@ const SpeechRecognition: React.FC<SpeechRecognitionProps> = ({
 
     // Handle end of recognition
     recognitionRef.current.onend = () => {
+      console.log('🎤 Speech recognition ended, isListening:', isListening);
+      isStartingRef.current = false;
+      isStoppingRef.current = false;
+      
       if (isListening) {
         // Restart recognition if it was supposed to be listening
         setTimeout(() => {
-          if (isListening && recognitionRef.current) {
+          if (isListening && recognitionRef.current && !isStartingRef.current) {
             try {
+              console.log('🔄 Restarting speech recognition...');
+              isStartingRef.current = true;
               recognitionRef.current.start();
             } catch (err) {
               console.error('Error restarting recognition:', err);
+              isStartingRef.current = false;
+              // If restart fails, stop listening to prevent infinite loops
+              onStop();
             }
           }
         }, 100);
@@ -125,19 +143,29 @@ const SpeechRecognition: React.FC<SpeechRecognitionProps> = ({
     if (!isInitialized || !recognitionRef.current) return;
 
     if (isListening) {
-      try {
-        setError(null);
-        recognitionRef.current.start();
-      } catch (err) {
-        console.error('Error starting recognition:', err);
-        setError('Failed to start speech recognition. Please try again.');
-        onStop();
+      if (!isStartingRef.current) {
+        try {
+          setError(null);
+          console.log('🎤 Starting speech recognition...');
+          isStartingRef.current = true;
+          recognitionRef.current.start();
+        } catch (err) {
+          console.error('Error starting recognition:', err);
+          isStartingRef.current = false;
+          setError('Failed to start speech recognition. Please try again.');
+          onStop();
+        }
       }
     } else {
-      try {
-        recognitionRef.current.stop();
-      } catch (err) {
-        console.error('Error stopping recognition:', err);
+      if (!isStoppingRef.current) {
+        try {
+          console.log('🛑 Stopping speech recognition...');
+          isStoppingRef.current = true;
+          recognitionRef.current.stop();
+        } catch (err) {
+          console.error('Error stopping recognition:', err);
+          isStoppingRef.current = false;
+        }
       }
     }
   }, [isListening, isInitialized, onStop]);

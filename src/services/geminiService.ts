@@ -1,5 +1,3 @@
-import { io, Socket } from 'socket.io-client';
-
 export interface GeminiAnalysis {
   riskLevel: 'low' | 'medium' | 'high';
   riskScore: number;
@@ -28,7 +26,6 @@ export interface GeminiResponse {
 }
 
 class GeminiService {
-  private socket: Socket | null = null;
   private conversationId: string | null = null;
   private isConnected: boolean = false;
 
@@ -40,38 +37,24 @@ class GeminiService {
     return `conv_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   }
 
-  // Connect to backend WebSocket
+  // Connect to backend (HTTP-based)
   connect(): Promise<void> {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
       try {
-        this.socket = io('http://localhost:5000', {
-          transports: ['websocket', 'polling']
-        });
-
-        this.socket.on('connect', () => {
+        // Test connection with health check
+        const response = await fetch('http://localhost:5000/api/health');
+        const data = await response.json();
+        
+        if (data.status === 'OK') {
           console.log('🔌 Connected to Gemini backend');
           this.isConnected = true;
-          
-          // Join conversation room
-          if (this.conversationId) {
-            this.socket?.emit('join-conversation', this.conversationId);
-          }
-          
           resolve();
-        });
-
-        this.socket.on('disconnect', () => {
-          console.log('🔌 Disconnected from Gemini backend');
-          this.isConnected = false;
-        });
-
-        this.socket.on('connect_error', (error) => {
-          console.error('❌ Connection error:', error);
-          this.isConnected = false;
-          reject(error);
-        });
-
+        } else {
+          throw new Error('Backend not responding correctly');
+        }
       } catch (error) {
+        console.error('❌ Connection error:', error);
+        this.isConnected = false;
         reject(error);
       }
     });
@@ -79,21 +62,23 @@ class GeminiService {
 
   // Disconnect from backend
   disconnect(): void {
-    if (this.socket) {
-      this.socket.disconnect();
-      this.socket = null;
-      this.isConnected = false;
-    }
+    this.isConnected = false;
+    this.socket = null;
   }
 
   // Analyze text with Gemini AI
   async analyzeText(text: string): Promise<GeminiAnalysis | null> {
+    console.log('🔍 Analyzing text:', text);
+    console.log('🔌 Connection status:', this.isConnected);
+    console.log('🆔 Conversation ID:', this.conversationId);
+    
     if (!this.isConnected || !this.conversationId) {
       console.warn('⚠️ Not connected to backend or no conversation ID');
       return null;
     }
 
     try {
+      console.log('📤 Sending request to backend...');
       const response = await fetch('http://localhost:5000/api/analyze-text', {
         method: 'POST',
         headers: {
@@ -105,9 +90,12 @@ class GeminiService {
         })
       });
 
+      console.log('📥 Response status:', response.status);
       const data: GeminiResponse = await response.json();
+      console.log('📥 Response data:', data);
       
       if (data.success && data.analysis) {
+        console.log('✅ Analysis successful:', data.analysis);
         return data.analysis;
       } else {
         console.error('❌ Analysis failed:', data.error);
@@ -170,8 +158,10 @@ class GeminiService {
   // Health check
   async healthCheck(): Promise<boolean> {
     try {
+      console.log('🔍 Checking backend health...');
       const response = await fetch('http://localhost:5000/api/health');
       const data = await response.json();
+      console.log('✅ Backend health check result:', data);
       return data.status === 'OK';
     } catch (error) {
       console.error('❌ Backend health check failed:', error);
@@ -191,9 +181,6 @@ class GeminiService {
   // Start new conversation
   startNewConversation(): void {
     this.conversationId = this.generateConversationId();
-    if (this.socket && this.isConnected) {
-      this.socket.emit('join-conversation', this.conversationId);
-    }
   }
 }
 
