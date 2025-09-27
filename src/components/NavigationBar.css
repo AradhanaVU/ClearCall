@@ -1,0 +1,145 @@
+/* NavigationBar styles */
+.navigation-bar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  font-family: 'Inter', sans-serif;
+}
+
+.nav-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 24px;
+  gap: 24px;
+}
+
+.nav-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Poppins', 'Inter', sans-serif;
+  font-weight: 700;
+  font-size: 18px;
+  color: inherit;
+  letter-spacing: -0.01em;
+}
+
+/* Nav icon removed */
+
+.nav-title {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.nav-items {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+  background: none;
+  min-width: fit-content;
+  letter-spacing: -0.005em;
+}
+
+.nav-item:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.nav-item.active {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  transform: translateY(-1px);
+}
+
+.nav-item-icon {
+  font-size: 16px;
+  line-height: 1;
+}
+
+.nav-item-label {
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .nav-container {
+    padding: 8px 16px;
+    gap: 16px;
+  }
+  
+  .nav-brand {
+    font-size: 16px;
+  }
+  
+  .nav-title {
+    display: none;
+  }
+  
+  .nav-items {
+    gap: 4px;
+    flex: 1;
+    justify-content: center;
+  }
+  
+  .nav-item {
+    padding: 6px 12px;
+    min-width: auto;
+    flex: 1;
+    justify-content: center;
+    max-width: 80px;
+  }
+  
+  .nav-item-label {
+    font-size: 12px;
+  }
+  
+  .nav-item-icon {
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .nav-container {
+    padding: 6px 12px;
+    gap: 12px;
+  }
+  
+  .nav-items {
+    gap: 2px;
+  }
+  
+  .nav-item {
+    padding: 6px;
+    max-width: 60px;
+  }
+  
+  .nav-item-label {
+    display: none;
+  }
+  
+  .nav-item-icon {
+    font-size: 16px;
+  }
+}

@@ -4,12 +4,6 @@
   flex-direction: column;
   align-items: center;
   gap: var(--spacing-lg);
-  padding: var(--spacing-xl);
-  border-radius: var(--border-radius-lg);
-  box-shadow: var(--shadow-md);
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .recognition-controls {
@@ -18,36 +12,48 @@
   align-items: center;
 }
 
-.start-button,
-.stop-button {
-  padding: var(--spacing-lg) var(--spacing-xl);
+.toggle-button {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-xl);
   border: none;
   border-radius: var(--border-radius);
-  font-size: var(--font-size-large);
+  font-family: 'Poppins', 'Inter', sans-serif;
+  font-size: 1.25rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
-  min-width: 200px;
-  display: flex;
-  align-items: center;
+  box-shadow: var(--shadow-md);
+  letter-spacing: -0.01em;
+  min-width: 280px;
+  width: 280px;
   justify-content: center;
-  gap: var(--spacing-sm);
+  white-space: nowrap;
 }
 
-.start-button:hover:not(:disabled),
-.stop-button:hover:not(:disabled) {
+.toggle-button:hover {
   transform: translateY(-2px);
   box-shadow: var(--shadow-lg);
 }
 
-.start-button:disabled,
-.stop-button:disabled {
-  cursor: not-allowed;
-  transform: none;
+.toggle-button.listening {
+  animation: pulse 2s infinite;
 }
 
-.start-button.listening {
-  animation: pulse 2s infinite;
+.toggle-button.starting {
+  cursor: not-allowed;
+  animation: pulse 1s infinite;
+}
+
+.toggle-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.button-icon {
+  font-size: var(--font-size-xl);
+  line-height: 1;
 }
 
 @keyframes pulse {
@@ -107,31 +113,21 @@
 
 /* Responsive design */
 @media (max-width: 768px) {
-  .speech-recognition {
-    padding: var(--spacing-lg);
-  }
-  
   .recognition-controls {
     flex-direction: column;
     width: 100%;
   }
   
-  .start-button,
-  .stop-button {
+  .toggle-button {
     width: 100%;
-    min-width: auto;
+    min-width: 280px;
     padding: var(--spacing-md) var(--spacing-lg);
     font-size: var(--font-size-base);
   }
 }
 
 @media (max-width: 480px) {
-  .speech-recognition {
-    padding: var(--spacing-md);
-  }
-  
-  .start-button,
-  .stop-button {
+  .toggle-button {
     padding: var(--spacing-sm) var(--spacing-md);
   }
 }

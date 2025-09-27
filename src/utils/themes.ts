@@ -3,22 +3,22 @@ import { Theme } from '../types';
 export const themes: { light: Theme; dark: Theme } = {
   light: {
     name: 'light',
-    backgroundColor: '#ffffff',
-    textColor: '#1a1a1a',
-    captionBackground: '#f8f9fa',
-    captionText: '#1a1a1a',
-    warningColor: '#dc3545',
-    buttonColor: '#007bff',
+    backgroundColor: '#f8fafc',
+    textColor: '#1e3a8a',
+    captionBackground: '#f1f5f9',
+    captionText: '#1e3a8a',
+    warningColor: '#dc2626',
+    buttonColor: '#2563eb',
     buttonText: '#ffffff'
   },
   dark: {
     name: 'dark',
-    backgroundColor: '#1a1a1a',
-    textColor: '#ffffff',
-    captionBackground: '#2d2d2d',
-    captionText: '#ffffff',
-    warningColor: '#ff6b6b',
-    buttonColor: '#4dabf7',
-    buttonText: '#1a1a1a'
+    backgroundColor: '#374151',
+    textColor: '#f3f4f6',
+    captionBackground: '#4b5563',
+    captionText: '#f3f4f6',
+    warningColor: '#ef4444',
+    buttonColor: '#6b7280',
+    buttonText: '#ffffff'
   }
 };

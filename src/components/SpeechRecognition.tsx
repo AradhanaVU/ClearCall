@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Theme } from '../types';
 import './SpeechRecognition.css';
 
@@ -7,24 +7,8 @@ interface SpeechRecognitionProps {
   onStart: () => void;
   onStop: () => void;
   onTranscriptUpdate: (text: string) => void;
+  onInterimUpdate: (text: string) => void;
   theme: Theme;
-}
-
-interface SpeechRecognitionEvent extends Event {
-  results: SpeechRecognitionResultList;
-  resultIndex: number;
-}
-
-interface SpeechRecognitionErrorEvent extends Event {
-  error: string;
-  message: string;
-}
-
-declare global {
-  interface Window {
-    SpeechRecognition: any;
-    webkitSpeechRecognition: any;
-  }
 }
 
 const SpeechRecognition: React.FC<SpeechRecognitionProps> = ({
@@ -32,12 +16,14 @@ const SpeechRecognition: React.FC<SpeechRecognitionProps> = ({
   onStart,
   onStop,
   onTranscriptUpdate,
+  onInterimUpdate,
   theme
 }) => {
   const recognitionRef = useRef<any>(null);
   const [isSupported, setIsSupported] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [isStarting, setIsStarting] = useState(false);
 
   useEffect(() => {
     // Check for browser support
@@ -49,16 +35,24 @@ const SpeechRecognition: React.FC<SpeechRecognitionProps> = ({
     }
 
     setIsSupported(true);
-    recognitionRef.current = new SpeechRecognition();
-    
-    // Configure recognition settings
-    recognitionRef.current.continuous = true;
-    recognitionRef.current.interimResults = true;
-    recognitionRef.current.lang = 'en-US';
-    recognitionRef.current.maxAlternatives = 1;
+    setIsInitialized(true);
+  }, []);
 
-    // Handle successful recognition
-    recognitionRef.current.onresult = (event: SpeechRecognitionEvent) => {
+  // Create a new recognition instance when needed
+  const createRecognition = () => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const recognition = new SpeechRecognition();
+    
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = 'en-US';
+    recognition.maxAlternatives = 1;
+
+    recognition.onstart = () => {
+      console.log('Speech recognition started');
+    };
+
+    recognition.onresult = (event: SpeechRecognitionEvent) => {
       let finalTranscript = '';
       let interimTranscript = '';
 
@@ -72,44 +66,31 @@ const SpeechRecognition: React.FC<SpeechRecognitionProps> = ({
         }
       }
 
-      // Only process final results to avoid spam
       if (finalTranscript) {
         onTranscriptUpdate(finalTranscript.trim());
+        onInterimUpdate('');
+      } else if (interimTranscript) {
+        onInterimUpdate(interimTranscript.trim());
       }
     };
 
-    // Handle errors
-    recognitionRef.current.onerror = (event: SpeechRecognitionErrorEvent) => {
+    recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
       console.error('Speech recognition error:', event.error);
-      
-      switch (event.error) {
-        case 'no-speech':
-          setError('No speech detected. Please try again.');
-          break;
-        case 'audio-capture':
-          setError('Microphone not accessible. Please check your permissions.');
-          break;
-        case 'not-allowed':
-          setError('Microphone access denied. Please allow microphone access.');
-          break;
-        case 'network':
-          setError('Network error. Please check your internet connection.');
-          break;
-        default:
-          setError(`Speech recognition error: ${event.error}`);
+      if (event.error !== 'aborted' && event.error !== 'no-speech') {
+        onStop();
       }
-      
-      onStop();
     };
 
-    // Handle end of recognition
-    recognitionRef.current.onend = () => {
+    recognition.onend = () => {
+      console.log('Speech recognition ended');
       if (isListening) {
-        // Restart recognition if it was supposed to be listening
+        // Restart with a new instance
         setTimeout(() => {
-          if (isListening && recognitionRef.current) {
+          if (isListening) {
+            const newRecognition = createRecognition();
+            recognitionRef.current = newRecognition;
             try {
-              recognitionRef.current.start();
+              newRecognition.start();
             } catch (err) {
               console.error('Error restarting recognition:', err);
             }
@@ -118,15 +99,19 @@ const SpeechRecognition: React.FC<SpeechRecognitionProps> = ({
       }
     };
 
-    setIsInitialized(true);
-  }, [onTranscriptUpdate, onStop, isListening]);
+    return recognition;
+  };
 
   useEffect(() => {
-    if (!isInitialized || !recognitionRef.current) return;
+    if (!isInitialized) return;
 
     if (isListening) {
+      if (!recognitionRef.current) {
+        recognitionRef.current = createRecognition();
+      }
+      
       try {
-        setError(null);
+        console.log('Starting speech recognition...');
         recognitionRef.current.start();
       } catch (err) {
         console.error('Error starting recognition:', err);
@@ -134,20 +119,46 @@ const SpeechRecognition: React.FC<SpeechRecognitionProps> = ({
         onStop();
       }
     } else {
-      try {
-        recognitionRef.current.stop();
-      } catch (err) {
-        console.error('Error stopping recognition:', err);
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.stop();
+        } catch (err) {
+          console.error('Error stopping recognition:', err);
+        }
+        recognitionRef.current = null;
       }
     }
   }, [isListening, isInitialized, onStop]);
 
-  const handleStart = () => {
+  const handleStart = async () => {
+    if (isStarting) return;
+    
     if (!isSupported) {
       setError('Speech recognition is not supported in this browser.');
       return;
     }
-    onStart();
+    
+    if (!isInitialized) {
+      setError('Speech recognition is not ready. Please wait a moment and try again.');
+      return;
+    }
+    
+    setIsStarting(true);
+    setError(null);
+    
+    try {
+      // Check for microphone permissions
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream.getTracks().forEach(track => track.stop());
+      console.log('Microphone permission granted, starting speech recognition...');
+      
+      onStart();
+    } catch (err) {
+      console.error('Microphone permission denied:', err);
+      setError('Microphone access is required. Please allow microphone access and try again.');
+    } finally {
+      setIsStarting(false);
+    }
   };
 
   const handleStop = () => {
@@ -167,31 +178,20 @@ const SpeechRecognition: React.FC<SpeechRecognitionProps> = ({
     <div className="speech-recognition">
       <div className="recognition-controls">
         <button
-          className={`start-button ${isListening ? 'listening' : ''}`}
-          onClick={handleStart}
-          disabled={isListening}
+          className={`toggle-button ${isListening ? 'listening' : ''} ${isStarting ? 'starting' : ''}`}
+          onClick={isListening ? handleStop : handleStart}
+          disabled={isStarting}
           style={{
-            backgroundColor: isListening ? theme.warningColor : '#28a745',
+            backgroundColor: isListening ? theme.warningColor : (isStarting ? theme.secondaryColor : theme.buttonColor),
             color: theme.buttonText,
-            opacity: isListening ? 0.7 : 1
+            opacity: isStarting ? 0.7 : 1
           }}
-          aria-label={isListening ? 'Currently listening' : 'Start listening'}
+          aria-label={isStarting ? 'Starting recording...' : (isListening ? 'Stop recording' : 'Start recording')}
         >
-          {isListening ? '🎤 Listening...' : '🎤 Start Listening'}
-        </button>
-        
-        <button
-          className="stop-button"
-          onClick={handleStop}
-          disabled={!isListening}
-          style={{
-            backgroundColor: theme.buttonColor,
-            color: theme.buttonText,
-            opacity: !isListening ? 0.5 : 1
-          }}
-          aria-label="Stop listening"
-        >
-          ⏹️ Stop
+          <span className="button-icon">
+            {isStarting ? '⏳' : (isListening ? '⏹️' : '🎤')}
+          </span>
+          {isStarting ? 'Starting...' : (isListening ? 'Stop Recording' : 'Start Recording')}
         </button>
       </div>
 
@@ -200,18 +200,6 @@ const SpeechRecognition: React.FC<SpeechRecognitionProps> = ({
           <p>⚠️ {error}</p>
         </div>
       )}
-
-      <div className="recognition-status">
-        <p style={{ color: theme.textColor }}>
-          {isListening ? '🎧 Listening for speech...' : '⏸️ Not listening'}
-        </p>
-        <p className="status-hint" style={{ color: theme.textColor, opacity: 0.7 }}>
-          {isListening 
-            ? 'Speak clearly into your microphone. Click Stop when finished.' 
-            : 'Click Start to begin transcribing speech in real-time.'
-          }
-        </p>
-      </div>
     </div>
   );
 };

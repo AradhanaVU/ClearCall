@@ -12,13 +12,9 @@ const ThemeToggle: React.FC<ThemeToggleProps> = ({ currentTheme, onToggle }) => 
     <button
       className="theme-toggle"
       onClick={onToggle}
-      style={{
-        backgroundColor: currentTheme.buttonColor,
-        color: currentTheme.buttonText
-      }}
       aria-label={`Switch to ${currentTheme.name === 'light' ? 'dark' : 'light'} theme`}
     >
-      {currentTheme.name === 'light' ? '🌙 Dark Mode' : '☀️ Light Mode'}
+      {currentTheme.name === 'light' ? '🌙' : '☀️'}
     </button>
   );
 };
