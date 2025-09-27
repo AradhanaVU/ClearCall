@@ -2,11 +2,13 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { TranscriptEntry, ScamKeyword, Theme, CallLogEntry } from './types';
 import SpeechRecognition from './components/SpeechRecognition';
 import CaptionDisplay from './components/CaptionDisplay';
+import GeminiInsights from './components/GeminiInsights';
 import { ScamDetector } from './utils/ScamDetector';
 import ThemeToggle from './components/ThemeToggle';
 import CallLog from './components/CallLog';
 import { themes } from './utils/themes';
 import { scamKeywords } from './utils/scamKeywords';
+import { geminiService } from './services/geminiService';
 import './App.css';
 
 const App: React.FC = () => {
@@ -16,6 +18,8 @@ const App: React.FC = () => {
   const [callLogs, setCallLogs] = useState<CallLogEntry[]>([]);
   const [currentCallId, setCurrentCallId] = useState<string | null>(null);
   const [showCallLog, setShowCallLog] = useState(false);
+  const [showGeminiInsights, setShowGeminiInsights] = useState(false);
+  const [geminiConnected, setGeminiConnected] = useState(false);
 
   // Initialize call log from localStorage
   useEffect(() => {
@@ -43,7 +47,7 @@ const App: React.FC = () => {
     localStorage.setItem('clearcall-logs', JSON.stringify(callLogs));
   }, [callLogs]);
 
-  const handleTranscriptUpdate = useCallback((newText: string) => {
+  const handleTranscriptUpdate = useCallback(async (newText: string) => {
     const scamDetection = ScamDetector.detectScamKeywords(newText, scamKeywords);
     
     const newEntry: TranscriptEntry = {
@@ -55,7 +59,16 @@ const App: React.FC = () => {
     };
 
     setTranscript(prev => [...prev, newEntry]);
-  }, []);
+
+    // Send to Gemini for enhanced analysis if connected
+    if (geminiConnected && showGeminiInsights) {
+      try {
+        await geminiService.analyzeText(newText);
+      } catch (error) {
+        console.error('Gemini analysis error:', error);
+      }
+    }
+  }, [geminiConnected, showGeminiInsights]);
 
   const startCall = useCallback(() => {
     const callId = Date.now().toString();
@@ -118,6 +131,16 @@ const App: React.FC = () => {
             >
               {showCallLog ? 'Hide Logs' : 'Show Logs'}
             </button>
+            <button 
+              className="gemini-toggle"
+              onClick={() => setShowGeminiInsights(!showGeminiInsights)}
+              style={{
+                backgroundColor: geminiConnected ? '#28a745' : '#6c757d',
+                color: 'white'
+              }}
+            >
+              🤖 AI Insights
+            </button>
           </div>
         </div>
       </header>
@@ -157,6 +180,12 @@ const App: React.FC = () => {
             <CaptionDisplay 
               transcript={transcript}
               theme={currentTheme}
+            />
+
+            <GeminiInsights
+              theme={currentTheme}
+              isVisible={showGeminiInsights}
+              onToggle={() => setShowGeminiInsights(!showGeminiInsights)}
             />
           </>
         )}

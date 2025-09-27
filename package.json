@@ -6,9 +6,16 @@
   "scripts": {
     "start": "webpack serve --mode development",
     "build": "webpack --mode production",
+    "backend": "cd backend && npm start",
+    "dev": "concurrently \"npm run backend\" \"npm start\"",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": ["accessibility", "speech-to-text", "captions", "scam-detection"],
+  "keywords": [
+    "accessibility",
+    "speech-to-text",
+    "captions",
+    "scam-detection"
+  ],
   "author": "",
   "license": "ISC",
   "dependencies": {
@@ -17,9 +24,11 @@
     "@types/react-dom": "^18.0.0",
     "react": "^18.0.0",
     "react-dom": "^18.0.0",
+    "socket.io-client": "^4.8.1",
     "typescript": "^5.0.0"
   },
   "devDependencies": {
+    "concurrently": "^8.2.2",
     "css-loader": "^6.0.0",
     "html-webpack-plugin": "^5.0.0",
     "style-loader": "^3.0.0",

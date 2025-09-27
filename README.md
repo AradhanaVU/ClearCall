@@ -1,119 +1,124 @@
-# ClearCall - Accessibility Phone Assistant
+# ClearCall Backend
 
-ClearCall is a React-based web application that provides real-time speech-to-text captions with scam detection for phone conversations. It's designed to help people who are hard of hearing or have auditory processing difficulties.
+Backend service for ClearCall that integrates with Google's Gemini API to provide enhanced scam detection and conversation analysis.
 
 ## Features
 
-### Core Features (MVP)
-- **Live Captioning**: Real-time speech-to-text using the Web Speech API
-- **Scam Detection**: Highlights suspicious keywords and phrases like "gift cards," "urgent payment," "IRS," etc.
-- **Accessible UI**: Large, readable captions with high-contrast themes
-- **Dark/Light Mode**: Toggle between themes for better accessibility
-- **Call Log**: Save and review transcripts of conversations
-- **Export Functionality**: Download transcripts as text files
+- **Enhanced Scam Detection**: AI-powered analysis using Gemini API
+- **Real-time Summarization**: Live conversation summaries and key point extraction
+- **WebSocket Support**: Real-time updates to frontend
+- **Conversation Management**: Track and analyze ongoing conversations
 
-### Accessibility Features
-- High contrast color schemes
-- Large, readable fonts
-- Screen reader support
-- Keyboard navigation
-- Reduced motion support
-- Focus indicators
+## Setup
 
-## Tech Stack
+1. **Install dependencies**:
+   ```bash
+   npm install
+   ```
 
-- **Frontend**: React 18 with TypeScript
-- **Styling**: CSS3 with CSS custom properties
-- **Speech Recognition**: Web Speech API (browser-native)
-- **Storage**: LocalStorage for call logs
-- **Build Tool**: Webpack 5
+2. **Set up environment variables**:
+   ```bash
+   cp env.example .env
+   ```
+   
+   Edit `.env` and add your Gemini API key:
+   ```
+   GEMINI_API_KEY=your_actual_gemini_api_key_here
+   ```
 
-## Getting Started
+3. **Get Gemini API Key**:
+   - Go to [Google AI Studio](https://makersuite.google.com/app/apikey)
+   - Create a new API key
+   - Copy it to your `.env` file
 
-### Prerequisites
-- Node.js (v14 or higher)
-- npm or yarn
-- Modern browser with Web Speech API support (Chrome, Edge, Safari)
+4. **Start the server**:
+   ```bash
+   npm start
+   ```
 
-### Installation
+## API Endpoints
 
-1. Clone the repository:
-```bash
-git clone <repository-url>
-cd clearcall
+### POST `/api/analyze-text`
+Analyze text for scam detection using Gemini AI.
+
+**Request**:
+```json
+{
+  "text": "You need to send gift cards immediately",
+  "conversationId": "unique-conversation-id"
+}
 ```
 
-2. Install dependencies:
-```bash
-npm install
+**Response**:
+```json
+{
+  "success": true,
+  "analysis": {
+    "riskLevel": "high",
+    "riskScore": 85,
+    "suspiciousElements": ["gift cards", "immediate payment"],
+    "explanation": "This contains classic scam indicators...",
+    "recommendations": ["Do not send gift cards", "Verify caller identity"]
+  },
+  "conversationId": "unique-conversation-id"
+}
 ```
 
-3. Start the development server:
-```bash
-npm start
+### POST `/api/generate-summary`
+Generate a summary of the conversation.
+
+**Request**:
+```json
+{
+  "conversationId": "unique-conversation-id"
+}
 ```
 
-4. Open your browser and navigate to `http://localhost:3000`
-
-### Building for Production
-
-```bash
-npm run build
+**Response**:
+```json
+{
+  "success": true,
+  "summary": {
+    "summary": "Brief conversation summary",
+    "keyPoints": ["Key point 1", "Key point 2"],
+    "actionItems": ["Action item 1", "Action item 2"],
+    "importantDetails": {
+      "dates": ["2024-01-01"],
+      "amounts": ["$500"],
+      "names": ["John Doe"]
+    }
+  },
+  "conversationId": "unique-conversation-id"
+}
 ```
 
-The built files will be in the `dist` directory.
+### GET `/api/conversation/:id`
+Get conversation details and history.
 
-## Usage
+### GET `/api/health`
+Health check endpoint.
 
-1. **Start Listening**: Click the "🎤 Start Listening" button to begin speech recognition
-2. **View Captions**: Real-time captions will appear below the controls
-3. **Scam Warnings**: Suspicious keywords will be highlighted in yellow and marked with warning badges
-4. **Stop Listening**: Click "⏹️ Stop" to end the current session
-5. **View History**: Click "Show Logs" to see your call history
-6. **Export Transcripts**: Click "Export" on any call log to download the transcript
+## WebSocket Events
 
-## Browser Compatibility
+- **Connection**: Client connects to server
+- **join-conversation**: Join a specific conversation room
+- **Real-time updates**: Server sends analysis results and summaries
 
-ClearCall works best in modern browsers that support the Web Speech API:
-- Chrome 25+
-- Edge 79+
-- Safari 14.1+
+## Development
 
-**Note**: Firefox does not currently support the Web Speech API.
+```bash
+# Install nodemon for development
+npm install -g nodemon
 
-## Scam Detection
+# Run in development mode
+npm run dev
+```
 
-The application detects various types of scam keywords across multiple categories:
+## Integration with Frontend
 
-- **Financial**: urgent payment, wire transfer, bank account
-- **Identity**: social security number, SSN
-- **Payment**: gift cards, iTunes cards, Amazon cards
-- **Government**: IRS, internal revenue service
-- **Tech Support**: Microsoft support, remote access
-- **Prize Scams**: lottery winner, congratulations
-- **Family Emergency**: grandparent scam, bail money
-- **Investment**: guaranteed returns, cryptocurrency
-- **Pressure Tactics**: act now, don't tell anyone
+The backend is designed to work with the ClearCall React frontend:
 
-## Privacy
-
-- All speech processing happens locally in your browser
-- No audio data is sent to external servers
-- Call logs are stored locally on your device
-- You can clear all data at any time
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test thoroughly
-5. Submit a pull request
-
-## License
-
-This project is licensed under the ISC License.
-
-## Support
-
-For issues or questions, please open an issue on the GitHub repository.
+1. Frontend sends speech-to-text results to `/api/analyze-text`
+2. Backend processes with Gemini API
+3. Results sent back via WebSocket for real-time updates
+4. Frontend displays enhanced warnings and insights
