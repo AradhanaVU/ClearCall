@@ -1,0 +1,137 @@
+/* Speech Recognition component styles */
+.speech-recognition {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-lg);
+  padding: var(--spacing-xl);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-md);
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.recognition-controls {
+  display: flex;
+  gap: var(--spacing-lg);
+  align-items: center;
+}
+
+.start-button,
+.stop-button {
+  padding: var(--spacing-lg) var(--spacing-xl);
+  border: none;
+  border-radius: var(--border-radius);
+  font-size: var(--font-size-large);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  min-width: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+}
+
+.start-button:hover:not(:disabled),
+.stop-button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.start-button:disabled,
+.stop-button:disabled {
+  cursor: not-allowed;
+  transform: none;
+}
+
+.start-button.listening {
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(220, 53, 69, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(220, 53, 69, 0);
+  }
+}
+
+.error-message {
+  text-align: center;
+  padding: var(--spacing-md);
+  background: rgba(220, 53, 69, 0.1);
+  border-radius: var(--border-radius);
+  border: 1px solid rgba(220, 53, 69, 0.3);
+  max-width: 500px;
+}
+
+.error-message p {
+  margin: 0;
+  font-weight: 500;
+}
+
+.recognition-status {
+  text-align: center;
+  max-width: 500px;
+}
+
+.recognition-status p {
+  margin: var(--spacing-sm) 0;
+  font-size: var(--font-size-base);
+}
+
+.status-hint {
+  font-size: var(--font-size-base) !important;
+  font-style: italic;
+}
+
+.speech-recognition-error {
+  text-align: center;
+  padding: var(--spacing-xl);
+  background: rgba(220, 53, 69, 0.1);
+  border-radius: var(--border-radius-lg);
+  border: 1px solid rgba(220, 53, 69, 0.3);
+  max-width: 600px;
+}
+
+.speech-recognition-error p {
+  margin: var(--spacing-sm) 0;
+  font-weight: 500;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .speech-recognition {
+    padding: var(--spacing-lg);
+  }
+  
+  .recognition-controls {
+    flex-direction: column;
+    width: 100%;
+  }
+  
+  .start-button,
+  .stop-button {
+    width: 100%;
+    min-width: auto;
+    padding: var(--spacing-md) var(--spacing-lg);
+    font-size: var(--font-size-base);
+  }
+}
+
+@media (max-width: 480px) {
+  .speech-recognition {
+    padding: var(--spacing-md);
+  }
+  
+  .start-button,
+  .stop-button {
+    padding: var(--spacing-sm) var(--spacing-md);
+  }
+}

@@ -1,0 +1,217 @@
+/* Caption Display component styles */
+.caption-display {
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
+  min-height: 400px;
+  max-height: 600px;
+  display: flex;
+  flex-direction: column;
+}
+
+.caption-display.empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+}
+
+.empty-state {
+  text-align: center;
+  padding: var(--spacing-xl);
+}
+
+.empty-state h3 {
+  font-size: var(--font-size-xl);
+  margin-bottom: var(--spacing-sm);
+}
+
+.empty-state p {
+  font-size: var(--font-size-base);
+  opacity: 0.7;
+}
+
+.caption-header {
+  padding: var(--spacing-lg);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+}
+
+.caption-header h2 {
+  font-size: var(--font-size-xl);
+  margin: 0;
+}
+
+.caption-stats {
+  display: flex;
+  gap: var(--spacing-md);
+  font-size: var(--font-size-base);
+  font-weight: 500;
+}
+
+.caption-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--spacing-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.caption-entry {
+  padding: var(--spacing-md);
+  border-radius: var(--border-radius);
+  transition: all 0.2s ease;
+  animation: slideIn 0.3s ease-out;
+}
+
+.caption-entry.scam-warning {
+  animation: warningPulse 0.5s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes warningPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 10px rgba(220, 53, 69, 0.1);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(220, 53, 69, 0);
+  }
+}
+
+.entry-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-sm);
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+}
+
+.timestamp {
+  font-size: var(--font-size-base);
+  font-family: 'Courier New', monospace;
+}
+
+.warning-badge {
+  color: white;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--border-radius);
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.entry-text {
+  font-size: var(--font-size-large);
+  line-height: 1.6;
+  margin-bottom: var(--spacing-sm);
+  word-wrap: break-word;
+}
+
+.scam-highlight {
+  background-color: #ffeb3b;
+  color: #d32f2f;
+  padding: 2px 4px;
+  border-radius: 3px;
+  font-weight: 600;
+}
+
+.scam-keywords {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs);
+  align-items: center;
+  font-size: var(--font-size-base);
+}
+
+.keyword-tag {
+  color: white;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--border-radius);
+  font-size: var(--font-size-base);
+  font-weight: 500;
+}
+
+/* Scrollbar styling */
+.caption-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.caption-content::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+}
+
+.caption-content::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 4px;
+}
+
+.caption-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.5);
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .caption-display {
+    min-height: 300px;
+    max-height: 500px;
+  }
+  
+  .caption-header {
+    padding: var(--spacing-md);
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .caption-stats {
+    width: 100%;
+    justify-content: space-between;
+  }
+  
+  .entry-text {
+    font-size: var(--font-size-base);
+  }
+  
+  .entry-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+@media (max-width: 480px) {
+  .caption-content {
+    padding: var(--spacing-sm);
+  }
+  
+  .caption-entry {
+    padding: var(--spacing-sm);
+  }
+  
+  .entry-text {
+    font-size: var(--font-size-base);
+  }
+  
+  .warning-badge {
+    font-size: var(--font-size-base);
+  }
+}
