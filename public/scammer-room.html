@@ -155,8 +155,7 @@
   
   <script src="/socket.io/socket.io.js"></script>
   <script>
-    const NGROK_URL = "https://nonextraneous-unsavage-natividad.ngrok-free.dev";
-    const socket = io(NGROK_URL);
+    const socket = io('http://localhost:5000');
     let currentNumber = '';
     let peerConnection;
     let localStream;

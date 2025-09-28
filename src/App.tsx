@@ -6,9 +6,12 @@ import GeminiInsights, { GeminiInsightsRef } from './components/GeminiInsights';
 import { ScamDetector } from './utils/ScamDetector';
 import ThemeToggle from './components/ThemeToggle';
 import CallLog from './components/CallLog';
+import ScammerKeypad from './components/ScammerKeypad';
+import CallInterface from './components/CallInterface';
 import { themes } from './utils/themes';
 import { scamKeywords } from './utils/scamKeywords';
 import { geminiService } from './services/geminiService';
+import io from 'socket.io-client';
 import './App.css';
 
 const App: React.FC = () => {
@@ -20,6 +23,9 @@ const App: React.FC = () => {
   const [showCallLog, setShowCallLog] = useState(false);
   const [showGeminiInsights, setShowGeminiInsights] = useState(false);
   const [geminiConnected, setGeminiConnected] = useState(false);
+  const [demoMode, setDemoMode] = useState(false);
+  const [isInCall, setIsInCall] = useState(false);
+  const [incomingCall, setIncomingCall] = useState<any>(null);
   const geminiInsightsRef = useRef<GeminiInsightsRef>(null);
 
   // Initialize call log from localStorage
@@ -67,6 +73,69 @@ const App: React.FC = () => {
     
     return () => clearInterval(interval);
   }, []);
+
+  // Socket.IO connection for call handling (only in demo mode)
+  useEffect(() => {
+    if (!demoMode) return;
+    
+    console.log('🔌 Setting up socket connection for demo mode...');
+    const socket = io('http://localhost:5000');
+    
+    socket.on('connect', () => {
+      console.log('✅ Socket connected:', socket.id);
+      // Join the accessibility room
+      socket.emit('join-conversation', 'accessibility');
+      console.log('📞 Joined accessibility room');
+    });
+    
+    socket.on('disconnect', () => {
+      console.log('❌ Socket disconnected');
+    });
+    
+    // Listen for incoming calls
+    socket.on('incoming-call', (data) => {
+      console.log('📞 Incoming call received:', data);
+      setIncomingCall(data);
+      // Auto-answer the call
+      socket.emit('accept-call', data);
+      console.log('📞 Auto-answering call...');
+    });
+
+    // Handle call accepted
+    socket.on('call-accepted', (data) => {
+      console.log('✅ Call accepted:', data);
+      setIsInCall(true);
+      setIncomingCall(null);
+      // Auto-start listening when call is accepted
+      if (!isListening) {
+        console.log('🎤 Starting speech recognition...');
+        startCall();
+      }
+    });
+
+    // Handle call ended
+    socket.on('call-ended', (data) => {
+      console.log('📞 Call ended:', data);
+      setIsInCall(false);
+      setIncomingCall(null);
+      // End the call and save logs
+      if (isListening) {
+        console.log('🎤 Ending speech recognition...');
+        endCall();
+      }
+    });
+
+    // Handle call rejected
+    socket.on('call-rejected', (data) => {
+      console.log('❌ Call rejected:', data);
+      setIncomingCall(null);
+    });
+
+    return () => {
+      console.log('🔌 Cleaning up socket connection...');
+      socket.disconnect();
+    };
+  }, [demoMode, isListening]);
 
   const handleTranscriptUpdate = useCallback(async (newText: string) => {
     const scamDetection = ScamDetector.detectScamKeywords(newText, scamKeywords);
@@ -174,6 +243,16 @@ const App: React.FC = () => {
             >
               🤖 AI Insights
             </button>
+            <button 
+              className="demo-toggle"
+              onClick={() => setDemoMode(!demoMode)}
+              style={{
+                backgroundColor: demoMode ? '#ff6b35' : '#17a2b8',
+                color: 'white'
+              }}
+            >
+              {demoMode ? '📞 Exit Demo' : '🎭 Demo Mode'}
+            </button>
           </div>
         </div>
       </header>
@@ -185,6 +264,121 @@ const App: React.FC = () => {
             theme={currentTheme}
             onClearLogs={() => setCallLogs([])}
           />
+        ) : demoMode ? (
+          <div className="demo-mode" style={{ display: 'flex', height: '100vh', gap: '20px' }}>
+            {/* Left Side - Scammer Interface */}
+            <div className="scammer-side" style={{ 
+              flex: 1, 
+              backgroundColor: '#2c3e50', 
+              padding: '20px', 
+              borderRadius: '12px',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              <h2 style={{ color: '#ecf0f1', marginBottom: '20px' }}>📞 Scammer Interface</h2>
+              <ScammerKeypad />
+              <div style={{ marginTop: '20px', textAlign: 'center' }}>
+                <p style={{ color: '#bdc3c7', fontSize: '0.9rem' }}>
+                  Simulate calling the accessibility assistant
+                </p>
+              </div>
+            </div>
+
+            {/* Right Side - Accessibility Assistant */}
+            <div className="assistant-side" style={{ 
+              flex: 1, 
+              backgroundColor: currentTheme.backgroundColor, 
+              padding: '20px', 
+              borderRadius: '12px',
+              border: '2px solid #3498db'
+            }}>
+              <h2 style={{ color: currentTheme.textColor, marginBottom: '20px', textAlign: 'center' }}>
+                🤖 ClearCall Assistant
+              </h2>
+              
+              {isInCall ? (
+                <div>
+                  <div style={{ 
+                    backgroundColor: '#28a745', 
+                    color: 'white', 
+                    padding: '10px', 
+                    borderRadius: '8px', 
+                    marginBottom: '20px',
+                    textAlign: 'center'
+                  }}>
+                    📞 Call Active - Listening and analyzing...
+                  </div>
+                  
+                  <div className="controls-section">
+                    <SpeechRecognition
+                      isListening={isListening}
+                      onStart={startCall}
+                      onStop={endCall}
+                      onTranscriptUpdate={handleTranscriptUpdate}
+                      theme={currentTheme}
+                    />
+                    
+                    <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', marginTop: '10px' }}>
+                      <button 
+                        className="gemini-toggle"
+                        onClick={() => setShowGeminiInsights(!showGeminiInsights)}
+                        style={{
+                          backgroundColor: geminiConnected ? '#28a745' : '#6c757d',
+                          color: 'white',
+                          padding: '8px 16px',
+                          border: 'none',
+                          borderRadius: '6px',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        🤖 AI Insights
+                      </button>
+                      
+                      {transcript.length > 0 && (
+                        <button 
+                          className="clear-button"
+                          onClick={clearTranscript}
+                          style={{
+                            backgroundColor: currentTheme.buttonColor,
+                            color: currentTheme.buttonText,
+                            padding: '8px 16px',
+                            border: 'none',
+                            borderRadius: '6px',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          Clear Transcript
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  <CaptionDisplay 
+                    transcript={transcript}
+                    theme={currentTheme}
+                  />
+
+                  <GeminiInsights
+                    ref={geminiInsightsRef}
+                    theme={currentTheme}
+                    isVisible={showGeminiInsights}
+                    onToggle={() => setShowGeminiInsights(!showGeminiInsights)}
+                  />
+                </div>
+              ) : (
+                <div style={{ textAlign: 'center', padding: '40px' }}>
+                  <p style={{ color: currentTheme.captionText, fontSize: '1.1rem' }}>
+                    Waiting for incoming call...
+                  </p>
+                  <p style={{ color: currentTheme.captionText, fontSize: '0.9rem', marginTop: '10px' }}>
+                    Use the scammer interface to simulate a call
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
         ) : (
           <>
             <div className="controls-section">

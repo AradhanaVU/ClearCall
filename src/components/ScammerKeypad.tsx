@@ -36,7 +36,7 @@ const ScammerKeypad: React.FC = () => {
     setStatus('Initiating call...');
     
     try {
-      const socket = io('http://localhost:3001');
+      const socket = io('http://localhost:5000');
       
       // Emit incoming call event
       socket.emit('incoming-call', { 
@@ -57,6 +57,7 @@ const ScammerKeypad: React.FC = () => {
       });
       
       socket.on('call-ended', () => {
+        console.log('📞 Call ended event received');
         endCall();
       });
       
@@ -71,6 +72,15 @@ const ScammerKeypad: React.FC = () => {
     setIsInCall(false);
     setStatus('Call ended');
     setTimeout(() => setStatus('Ready to dial'), 2000);
+    
+    // Emit end-call event to backend
+    try {
+      const socket = io('http://localhost:5000');
+      socket.emit('end-call', { callId: 'accessibility' });
+      console.log('📞 End call event sent');
+    } catch (err) {
+      console.error('Error ending call:', err);
+    }
   };
 
   const resetCallState = () => {

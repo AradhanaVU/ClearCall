@@ -1,0 +1,28 @@
+[33mcommit 6074004528aa837d2dd6efebc06e1b5961b9014c[m[33m ([m[1;31morigin/victoriasbranch[m[33m)[m
+Author: yefymenkovictoria <yefymenkovictoria@gmail.com>
+Date:   Sun Sep 28 07:34:10 2025 -0400
+
+    Add scammer keypad interface and enhance ClearCall functionality
+    
+    - Added scammer keypad component with numeric dialer
+    - Enhanced main user interface with incoming call notifications
+    - Integrated backend server with WebRTC support for voice calls
+    - Added real-time speech transcription display
+    - Moved caption display under main user controls
+    - Added call interface with answer/reject functionality
+    - Created phone dialer page for scammer simulation
+    - Updated package dependencies for socket.io integration
+
+backend/routes/twilio.js
+backend/server.js
+backend/services/speechToText.js
+ngrok.exe
+package-lock.json
+package.json
+public/scammer-room.html
+src/App.tsx
+src/components/CallInterface.css
+src/components/CallInterface.tsx
+src/components/JoinCall.tsx
+src/components/ScammerKeypad.tsx
+start-all-with-ngrok.bat

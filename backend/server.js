@@ -205,12 +205,49 @@ app.post('/api/generate-summary', async (req, res) => {
   try {
     const { conversationId } = req.body;
     
-    if (!conversationId || !activeConversations.has(conversationId)) {
-      return res.status(400).json({ error: 'Invalid conversation ID' });
+    if (!conversationId) {
+      return res.status(400).json({ error: 'Conversation ID required' });
+    }
+
+    // Create conversation if it doesn't exist
+    if (!activeConversations.has(conversationId)) {
+      activeConversations.set(conversationId, {
+        id: conversationId,
+        messages: [],
+        analysisHistory: [],
+        summaries: [],
+        createdAt: new Date()
+      });
+      console.log(`📝 Created new conversation: ${conversationId}`);
     }
 
     const conversation = activeConversations.get(conversationId);
     const conversationHistory = conversation.messages.map(msg => msg.text);
+    
+    // If no messages, create a basic summary
+    if (conversationHistory.length === 0) {
+      const basicSummary = {
+        summary: "No conversation data available for summary generation.",
+        keyPoints: ["No messages recorded"],
+        actionItems: ["Start a conversation to generate meaningful insights"],
+        importantDetails: {
+          dates: [],
+          amounts: [],
+          names: []
+        }
+      };
+      
+      conversation.summaries.push({
+        ...basicSummary,
+        timestamp: new Date()
+      });
+
+      return res.json({
+        success: true,
+        summary: basicSummary,
+        conversationId
+      });
+    }
     
     const summary = await generateSummary(conversationHistory, conversationId);
     
@@ -279,6 +316,59 @@ io.on('connection', (socket) => {
   socket.on('join-conversation', (conversationId) => {
     socket.join(conversationId);
     console.log(`📞 Socket ${socket.id} joined conversation ${conversationId}`);
+  });
+
+  // Handle incoming calls from scammer interface
+  socket.on('incoming-call', (data) => {
+    console.log('📞 Incoming call:', data);
+    console.log('📞 Broadcasting to accessibility room...');
+    // Broadcast to all clients in the accessibility room
+    socket.to('accessibility').emit('incoming-call', data);
+    // Also emit to the caller to confirm
+    socket.emit('call-initiated', data);
+    console.log('📞 Call broadcasted to accessibility room');
+  });
+
+  // Handle call acceptance
+  socket.on('accept-call', (data) => {
+    console.log('✅ Call accepted:', data);
+    console.log('📞 Broadcasting call-accepted to accessibility room...');
+    socket.to('accessibility').emit('call-accepted', data);
+    // Also emit to the caller to confirm
+    socket.emit('call-accepted', data);
+    console.log('📞 Call-accepted event broadcasted');
+  });
+
+  // Handle call rejection
+  socket.on('reject-call', (data) => {
+    console.log('❌ Call rejected:', data);
+    socket.to('accessibility').emit('call-rejected', data);
+  });
+
+  // Handle call ending
+  socket.on('end-call', (data) => {
+    console.log('📞 Call ended:', data);
+    console.log('📞 Broadcasting call-ended to accessibility room...');
+    socket.to('accessibility').emit('call-ended', data);
+    // Also emit to the caller to confirm
+    socket.emit('call-ended', data);
+    console.log('📞 Call-ended event broadcasted');
+  });
+
+  // Handle WebRTC signaling
+  socket.on('webrtc-offer', (data) => {
+    console.log('📡 WebRTC offer received');
+    socket.to('accessibility').emit('webrtc-offer', data);
+  });
+
+  socket.on('webrtc-answer', (data) => {
+    console.log('📡 WebRTC answer received');
+    socket.to('accessibility').emit('webrtc-answer', data);
+  });
+
+  socket.on('webrtc-candidate', (data) => {
+    console.log('📡 WebRTC candidate received');
+    socket.to('accessibility').emit('webrtc-candidate', data);
   });
   
   socket.on('disconnect', () => {

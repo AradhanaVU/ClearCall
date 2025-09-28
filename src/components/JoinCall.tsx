@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import io from 'socket.io-client';
 
-const SIGNALING_SERVER_URL = 'http://localhost:3001';
+const SIGNALING_SERVER_URL = 'http://localhost:5000';
 const ICE_SERVERS = [{ urls: 'stun:stun.l.google.com:19302' }];
 
 const JoinCall: React.FC = () => {
