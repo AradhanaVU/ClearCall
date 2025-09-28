@@ -1,0 +1,146 @@
+.call-interface {
+  margin-bottom: var(--spacing-lg);
+  padding: var(--spacing-lg);
+  border-radius: var(--border-radius);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.call-status {
+  text-align: center;
+  min-height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+}
+
+.idle-state h3 {
+  margin-bottom: var(--spacing-sm);
+}
+
+.idle-state p {
+  opacity: 0.7;
+  font-size: var(--font-size-sm);
+}
+
+.incoming-call {
+  animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+.caller-info {
+  margin: var(--spacing-md) 0;
+  padding: var(--spacing-md);
+  background: rgba(0,0,0,0.1);
+  border-radius: var(--border-radius);
+}
+
+.call-actions {
+  display: flex;
+  gap: var(--spacing-md);
+  justify-content: center;
+}
+
+.pickup-btn, .reject-btn, .end-call-btn {
+  padding: var(--spacing-md) var(--spacing-lg);
+  border: none;
+  border-radius: var(--border-radius);
+  font-size: var(--font-size-base);
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-width: 120px;
+}
+
+.pickup-btn:hover {
+  background-color: #27ae60 !important;
+  transform: translateY(-2px);
+}
+
+.reject-btn:hover, .end-call-btn:hover {
+  background-color: #c0392b !important;
+  transform: translateY(-2px);
+}
+
+.connected-call h3 {
+  color: #27ae60;
+  margin-bottom: var(--spacing-sm);
+}
+
+.call-controls {
+  display: flex;
+  gap: var(--spacing-sm);
+  align-items: center;
+  margin-bottom: var(--spacing-sm);
+}
+
+.phone-input {
+  flex: 1;
+  padding: var(--spacing-md);
+  border-radius: var(--border-radius);
+  font-size: var(--font-size-base);
+  border: 1px solid #ccc;
+  max-width: 300px;
+}
+
+.call-button {
+  padding: var(--spacing-md) var(--spacing-lg);
+  border: none;
+  border-radius: var(--border-radius);
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  min-width: 120px;
+}
+
+.call-button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.call-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.call-info {
+  text-align: center;
+}
+
+.call-info p {
+  margin: 0;
+  font-size: var(--font-size-base);
+}
+
+@media (max-width: 768px) {
+  .call-controls {
+    flex-direction: column;
+  }
+  
+  .phone-input {
+    max-width: 100%;
+    width: 100%;
+  }
+  
+  .call-button {
+    width: 100%;
+  }
+}
+
+.error-message {
+  border-left: 4px solid #dc3545;
+  padding: var(--spacing-md);
+  margin-top: var(--spacing-md);
+  background-color: rgba(220, 53, 69, 0.1);
+  border-radius: var(--border-radius);
+}
+
+.error-message strong {
+  font-weight: 600;
+}

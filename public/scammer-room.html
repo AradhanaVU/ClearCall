@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Phone Dialer</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+    }
+    .phone-container {
+      background: #34495e;
+      padding: 30px;
+      border-radius: 20px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      max-width: 350px;
+      width: 90%;
+      text-align: center;
+    }
+    h1 { 
+      margin-bottom: 30px; 
+      font-size: 1.8rem; 
+      color: #ecf0f1;
+    }
+    .display {
+      background: #2c3e50;
+      padding: 15px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+      font-size: 1.5rem;
+      font-weight: bold;
+      letter-spacing: 2px;
+      min-height: 30px;
+      border: 2px solid #34495e;
+      color: #ecf0f1;
+    }
+    .keypad {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+    .key {
+      background: #3498db;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 70px;
+      height: 70px;
+      font-size: 1.5rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .key:hover {
+      background: #2980b9;
+      transform: scale(1.05);
+    }
+    .key:active {
+      transform: scale(0.95);
+    }
+    .key.zero {
+      grid-column: span 2;
+      border-radius: 35px;
+    }
+    .action-buttons {
+      display: flex;
+      gap: 15px;
+      margin-top: 20px;
+    }
+    .call-btn, .clear-btn {
+      flex: 1;
+      padding: 15px;
+      border: none;
+      border-radius: 25px;
+      font-size: 1.1rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .call-btn {
+      background: #27ae60;
+      color: white;
+    }
+    .call-btn:hover {
+      background: #219a52;
+    }
+    .clear-btn {
+      background: #e74c3c;
+      color: white;
+    }
+    .clear-btn:hover {
+      background: #c0392b;
+    }
+    .status {
+      margin-top: 20px;
+      font-size: 1rem;
+      color: #bdc3c7;
+    }
+    .loading {
+      display: none;
+      margin: 10px auto;
+      width: 30px;
+      height: 30px;
+      border: 3px solid rgba(255,255,255,.3);
+      border-radius: 50%;
+      border-top-color: #fff;
+      animation: spin 1s ease-in-out infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <div class="phone-container">
+    <h1>� Phone Dialer</h1>
+    <div class="display" id="display">Enter number</div>
+    
+    <div class="keypad">
+      <button class="key" onclick="addDigit('1')">1</button>
+      <button class="key" onclick="addDigit('2')">2</button>
+      <button class="key" onclick="addDigit('3')">3</button>
+      <button class="key" onclick="addDigit('4')">4</button>
+      <button class="key" onclick="addDigit('5')">5</button>
+      <button class="key" onclick="addDigit('6')">6</button>
+      <button class="key" onclick="addDigit('7')">7</button>
+      <button class="key" onclick="addDigit('8')">8</button>
+      <button class="key" onclick="addDigit('9')">9</button>
+      <button class="key" onclick="addDigit('*')">*</button>
+      <button class="key zero" onclick="addDigit('0')">0</button>
+      <button class="key" onclick="addDigit('#')">#</button>
+    </div>
+    
+    <div class="action-buttons">
+      <button class="clear-btn" onclick="clearDisplay()">Clear</button>
+      <button class="call-btn" onclick="makeCall()">📞 Call</button>
+    </div>
+    
+    <div class="loading" id="loading"></div>
+    <div class="status" id="status">Dial a number and press Call</div>
+  </div>
+
+  <audio id="localAudio" muted autoplay></audio>
+  <audio id="remoteAudio" autoplay></audio>
+  
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const NGROK_URL = "https://nonextraneous-unsavage-natividad.ngrok-free.dev";
+    const socket = io(NGROK_URL);
+    let currentNumber = '';
+    let peerConnection;
+    let localStream;
+    let remoteStream;
+    let isInCall = false;
+    
+    const display = document.getElementById('display');
+    const status = document.getElementById('status');
+    const loading = document.getElementById('loading');
+    const localAudio = document.getElementById('localAudio');
+    const remoteAudio = document.getElementById('remoteAudio');
+
+    function addDigit(digit) {
+      if (isInCall) return;
+      
+      if (currentNumber === '' && display.textContent === 'Enter number') {
+        display.textContent = '';
+      }
+      
+      if (currentNumber.length < 15) {
+        currentNumber += digit;
+        display.textContent = currentNumber;
+      }
+    }
+
+    function clearDisplay() {
+      if (isInCall) return;
+      
+      currentNumber = '';
+      display.textContent = 'Enter number';
+      status.textContent = 'Dial a number and press Call';
+    }
+
+    function setStatus(text) {
+      status.textContent = text;
+    }
+
+    function showLoading(show) {
+      loading.style.display = show ? 'block' : 'none';
+    }
+
+    function setupWebRTC() {
+      peerConnection = new RTCPeerConnection({
+        iceServers: [ { urls: 'stun:stun.l.google.com:19302' } ]
+      });
+      
+      peerConnection.onicecandidate = (event) => {
+        if (event.candidate) {
+          socket.emit('webrtc-candidate', { 
+            callId: 'accessibility', 
+            candidate: event.candidate 
+          });
+        }
+      };
+      
+      peerConnection.ontrack = (event) => {
+        remoteStream = event.streams[0];
+        remoteAudio.srcObject = remoteStream;
+        setStatus('Call connected! Speaking...');
+      };
+    }
+
+    async function makeCall() {
+      if (isInCall) {
+        // End call
+        endCall();
+        return;
+      }
+      
+      if (!currentNumber || currentNumber === '') {
+        setStatus('Please enter a number first');
+        return;
+      }
+
+      isInCall = true;
+      setStatus('Initiating call...');
+      showLoading(true);
+      
+      // Update button text
+      document.querySelector('.call-btn').textContent = '📞 End Call';
+      document.querySelector('.call-btn').style.background = '#e74c3c';
+
+      try {
+        // Get microphone access first
+        localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        localAudio.srcObject = localStream;
+        
+        setupWebRTC();
+        localStream.getTracks().forEach(track => {
+          peerConnection.addTrack(track, localStream);
+        });
+
+        // Join the accessibility room as a caller
+        socket.emit('incoming-call', { 
+          phoneNumber: currentNumber,
+          callId: 'accessibility'
+        });
+        
+        setStatus('Calling ' + currentNumber + '...');
+        
+      } catch (err) {
+        console.error('Error accessing microphone:', err);
+        setStatus('Microphone access denied');
+        resetCallState();
+      }
+    }
+
+    function endCall() {
+      isInCall = false;
+      setStatus('Call ended');
+      showLoading(false);
+      
+      // Reset button
+      document.querySelector('.call-btn').textContent = '📞 Call';
+      document.querySelector('.call-btn').style.background = '#27ae60';
+      
+      // Close connections
+      if (peerConnection) {
+        peerConnection.close();
+        peerConnection = null;
+      }
+      
+      if (localStream) {
+        localStream.getTracks().forEach(track => track.stop());
+        localStream = null;
+      }
+      
+      localAudio.srcObject = null;
+      remoteAudio.srcObject = null;
+      
+      socket.emit('end-call', { callId: 'accessibility' });
+    }
+
+    function resetCallState() {
+      isInCall = false;
+      showLoading(false);
+      document.querySelector('.call-btn').textContent = '📞 Call';
+      document.querySelector('.call-btn').style.background = '#27ae60';
+    }
+
+    // Socket event handlers
+    socket.on('call-accepted', async () => {
+      setStatus('Call accepted! Connecting...');
+      showLoading(false);
+    });
+
+    socket.on('webrtc-offer', async (data) => {
+      if (!peerConnection) setupWebRTC();
+      
+      await peerConnection.setRemoteDescription(new RTCSessionDescription(data.offer));
+      const answer = await peerConnection.createAnswer();
+      await peerConnection.setLocalDescription(answer);
+      
+      socket.emit('webrtc-answer', { 
+        callId: 'accessibility', 
+        answer: answer 
+      });
+    });
+
+    socket.on('webrtc-answer', async (data) => {
+      if (peerConnection) {
+        await peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer));
+      }
+    });
+
+    socket.on('webrtc-candidate', async (data) => {
+      if (peerConnection) {
+        try {
+          await peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
+        } catch (err) {
+          console.error('Error adding ICE candidate:', err);
+        }
+      }
+    });
+
+    socket.on('call-ended', () => {
+      endCall();
+    });
+
+    socket.on('call-rejected', () => {
+      setStatus('Call was rejected');
+      resetCallState();
+    });
+
+    // Keyboard support
+    document.addEventListener('keydown', (event) => {
+      const key = event.key;
+      if (key >= '0' && key <= '9') {
+        addDigit(key);
+      } else if (key === '*' || key === '#') {
+        addDigit(key);
+      } else if (key === 'Enter') {
+        makeCall();
+      } else if (key === 'Backspace' && !isInCall) {
+        if (currentNumber.length > 0) {
+          currentNumber = currentNumber.slice(0, -1);
+          display.textContent = currentNumber || 'Enter number';
+        }
+      } else if (key === 'Escape') {
+        if (isInCall) {
+          endCall();
+        } else {
+          clearDisplay();
+        }
+      }
+    });
+
+    // Initialize
+    setStatus('Ready to dial');
+  </script>
+</body>
+</html>
